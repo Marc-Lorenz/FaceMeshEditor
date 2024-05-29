@@ -13344,4 +13344,4 @@ window.onload = function (_) {
   };
 };
 },{"bootstrap":"XhER","./view/slider":"Q2pJ","./view/checkbox":"GFaE","./view/thumbnail":"N3UC","./cache/fileAnnotationHistory":"hQdi","./graph/point2d":"gDGJ","./editor2d":"rUEc","./graph/graph":"V4e4","./graph/face_landmarks_features":"K0kV","./model/mediapipe":"MWsf","./model/models":"w2n2","./model/webservice":"Q7NS"}]},{},["YSF2"], null)
-//# sourceMappingURL=app.e3cfaa97.js.map
+//# sourceMappingURL=FaceMeshEditor/app.e3cfaa97.js.map
