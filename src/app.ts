@@ -71,7 +71,27 @@ export class App {
       if (input.files) {
         const files: File[] = Array.from(input.files);
         for (const f of files) {
-          const history = new FileAnnotationHistory<Point2D>(f, this.cacheSize);
+          const callback = (history: FileAnnotationHistory<Point2D>) => {
+            if (this.getModel().type !== ModelType.custom) {
+              return false;
+            }
+
+            const model = this.getModel() as WebServiceModel;
+
+            model
+              .getHistory(history.file.name, history.hash)
+              .then((new_history) => {
+                history.expand(new_history);
+              });
+
+            return true;
+          };
+
+          const history = new FileAnnotationHistory<Point2D>(
+            f,
+            this.cacheSize,
+            callback,
+          );
           this.fileCache.push(history);
           const thumbnail = new Thumbnail((filename) =>
             this.selectThumbnail(filename),

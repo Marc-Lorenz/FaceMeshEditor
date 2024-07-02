@@ -1,11 +1,14 @@
 import { Graph } from '../graph/graph';
 import { Point2D } from '../graph/point2d';
+import { ModelType } from './models';
 
 /**
  * Represents an interface for a model API that performs face landmark detection.
  * @template P - Type of the points (must extend Point2D).
  */
 export interface ModelApi<P extends Point2D> {
+  get type(): ModelType;
+
   /**
    * Detects face landmarks in the provided image file.
    * @param {File} imageFile - The image file to analyze.

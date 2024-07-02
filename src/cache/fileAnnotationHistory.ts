@@ -13,16 +13,27 @@ export class FileAnnotationHistory<T extends Point2D> {
   private currentHistoryIndex: number = 0;
   private readonly _file: File;
   private _hash: string;
+  private _loadedFromServer: boolean;
+  private readonly _loadHistoryCallback: (
+    history: FileAnnotationHistory<T>,
+  ) => boolean;
 
   /**
    * Creates a new FileAnnotationHistory instance.
    * @param {File} file - The file associated with the annotations.
    * @param {number} cacheSize - The maximum number of history entries to retain.
+   * @param {Function} loadHistoryCallback - The function executed to load additional history data from the server
    */
-  constructor(file: File, cacheSize: number) {
+  constructor(
+    file: File,
+    cacheSize: number,
+    loadHistoryCallback: (history: FileAnnotationHistory<T>) => boolean,
+  ) {
     this._file = file;
     this.cacheSize = cacheSize;
     calculateSHA(this._file).then((sha) => (this._hash = sha));
+    this._loadedFromServer = false;
+    this._loadHistoryCallback = loadHistoryCallback;
   }
 
   /**
@@ -60,6 +71,11 @@ export class FileAnnotationHistory<T extends Point2D> {
    */
   setIndex(index: number): void {
     if (index < 0) {
+      if (!this._loadedFromServer) {
+        if (this._loadHistoryCallback(this)) {
+          this._loadedFromServer = true;
+        }
+      }
       index = 0;
     } else if (index >= this.history.length) {
       index = this.history.length - 1;
@@ -106,5 +122,14 @@ export class FileAnnotationHistory<T extends Point2D> {
   clear() {
     this.history.length = 0;
     this.currentHistoryIndex = 0;
+  }
+
+  /**
+   * prepends the new history and moves the index appropriately
+   */
+
+  expand(history: Graph<T>[]) {
+    this.history = history.concat(history);
+    this.currentHistoryIndex = history.length - 1;
   }
 }

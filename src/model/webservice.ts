@@ -4,26 +4,31 @@ import { Graph } from '../graph/graph';
 import { findNeighbourPointIds } from '../graph/face_landmarks_features';
 import { FaceLandmarker } from '@mediapipe/tasks-vision';
 import { calculateSHA } from '../util/sha';
+import { ModelType } from './models';
 
 /**
  * Represents a model using a WebService for face landmark detection.
  * Implements the ModelApi interface for working with Point2D graphs.
  */
 export class WebServiceModel implements ModelApi<Point2D> {
-  private readonly url: string;
+  private readonly _url: string;
+
+  get type(): ModelType {
+    return ModelType.custom;
+  }
 
   /**
    * Creates a new WebServiceModel instance.
    */
   constructor(url: string) {
-    this.url = url;
+    this._url = url;
   }
 
   async detect(imageFile: File): Promise<Graph<Point2D>> {
     const formData: FormData = new FormData();
     formData.append('file', imageFile);
 
-    const request: RequestInfo = new Request(this.url + '/detect', {
+    const request: RequestInfo = new Request(this._url + '/detect', {
       method: 'POST',
       body: formData,
     });
@@ -47,16 +52,18 @@ export class WebServiceModel implements ModelApi<Point2D> {
         return json['points'];
       })
       .then((landmarks) =>
-        landmarks.map((dict: { x: number; y: number }, idx: number) => {
-          const ids = Array.from(
-            findNeighbourPointIds(
-              idx,
-              FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-              1,
-            ),
-          );
-          return new Point2D(idx, dict.x, dict.y, ids);
-        }),
+        landmarks.map(
+          (dict: { x: number; y: number; deleted: boolean; id: number }) => {
+            const ids = Array.from(
+              findNeighbourPointIds(
+                dict.id,
+                FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+                1,
+              ),
+            );
+            return new Point2D(dict.id, dict.x, dict.y, ids, dict.deleted);
+          },
+        ),
       )
       .then((landmarks) => new Graph(landmarks))
       .catch((err: Error) => {
@@ -70,13 +77,57 @@ export class WebServiceModel implements ModelApi<Point2D> {
     headers.set('Content-Type', 'application/json');
     headers.set('Accept', 'application/json');
 
-    const request: RequestInfo = new Request(this.url + '/annotations', {
+    const request: RequestInfo = new Request(this._url + '/annotations', {
       method: 'POST',
       headers: headers,
       body: annotationsJson,
     });
 
     return fetch(request).then();
+  }
+
+  async getHistory(
+    file_name: string,
+    sha256: string,
+  ): Promise<Graph<Point2D>[]> {
+    const req = new Request(
+      this._url + '/history&file_name=' + file_name + '&sha256=' + sha256,
+      {
+        method: 'GET',
+      },
+    );
+
+    return fetch(req)
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error((await res.json())['message']);
+        }
+        return res.json();
+      })
+      .then((history: string[]) => {
+        const res: Graph<Point2D>[] = [];
+        history.forEach((landmarks_str) => {
+          const landmarks = JSON.parse(landmarks_str);
+          const points = landmarks.map(
+            (dict: { x: number; y: number; deleted: boolean; id: number }) => {
+              const ids = Array.from(
+                findNeighbourPointIds(
+                  dict.id,
+                  FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+                  1,
+                ),
+              );
+              return new Point2D(dict.id, dict.x, dict.y, ids, dict.deleted);
+            },
+          );
+          res.push(new Graph(points));
+        });
+        return res;
+      })
+      .catch((err: Error) => {
+        console.log(err.message);
+        return null;
+      });
   }
 
   /**

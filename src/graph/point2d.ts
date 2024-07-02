@@ -11,12 +11,20 @@ export class Point2D {
    * @param {number} x - The x-coordinate of the point.
    * @param {number} y - The y-coordinate of the point.
    * @param {number[]} neighbourIds - An array of neighbor IDs.
+   * @param [deleted=false] - if the point is deleted
    */
-  constructor(id: number, x: number, y: number, neighbourIds: number[]) {
+  constructor(
+    id: number,
+    x: number,
+    y: number,
+    neighbourIds: number[],
+    deleted: boolean = false,
+  ) {
     this._id = id;
     this._x = x;
     this._y = y;
     this.neighbourIds = neighbourIds;
+    this._deleted = deleted;
   }
 
   private _selected: boolean = false;
