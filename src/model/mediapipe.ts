@@ -4,7 +4,6 @@ import { findNeighbourPointIds } from '../graph/face_landmarks_features';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { Point2D } from '../graph/point2d';
 import { Point3D } from '../graph/point3d';
-import { File } from 'node:buffer';
 import { ModelType } from './models';
 
 /**
